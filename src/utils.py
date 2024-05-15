@@ -9,9 +9,30 @@ from PIL import Image, ImageEnhance
 from tqdm import tqdm
 from table_detection import table_detect
 from table_structure_rec import table_structure_recognize
-# from ocr_image import ocr_image
+import json
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 import fitz  # Thư viện pymupdf
 dirname = os.path.dirname(__file__)
+
+
+def encrypt_data(data):
+    with open('encrypted_key.bin', 'rb') as file:
+        key = file.read()
+    cipher = AES.new(key, AES.MODE_GCM)
+    json_data = json.dumps(data)
+    ciphertext, tag = cipher.encrypt_and_digest(json_data.encode('utf-8'))
+    return ciphertext, cipher.nonce, tag
+
+
+def decrypt_data(ciphertext, nonce, tag, key):
+    with open('encrypted_key.bin', 'rb') as file:
+        key = file.read()
+    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+    decrypted_data = cipher.decrypt_and_verify(ciphertext, tag)
+    decrypted_json = decrypted_data.decode('utf-8')
+    decrypted_dict = json.loads(decrypted_json)
+    return decrypted_dict
 
 
 def convert_image_to_base64(pil_img):

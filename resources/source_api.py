@@ -11,8 +11,10 @@ import numpy as np
 import uuid
 from src.utils import seperate_image, ocr_text
 from src.init_models import cccd_ocr, ocr_template
+from src.mongo_db_ultils import display_collection, edit_document, delete_document
 from src.table2excel import table2excel
 from src.autofill import autofill
+from src.process_token import access_profile
 
 
 class PreprocessApi(Resource):
@@ -53,46 +55,26 @@ class OCRApi(Resource):
 
 
 class OcrCccdApi(Resource):
-    def get(self):
-        # Retrieve user_id from session
-        user_id = session.get('username')
-        return {'user_id': user_id}, 200
-    # def post(self):
-    #     username = session.get('user_id')
-    #     # if 'file' not in request.files:
-    #     #     return make_response("No file part", 400)
-    #     # file = request.files['file']
-    #     # if file.filename == '':
-    #     #     return make_response("No selected file", 400)
-    #     # # if file.mimetype!='image/jpeg':
-    #     # #     return make_response("Upload file format is not correct", 400)
-    #     # response = file.read()
-    #     # img = cv2.imdecode(np.fromstring(response, np.uint8), cv2.IMREAD_COLOR)
-    #     # ocr_data = cccd_ocr.ocr_process(img, user_id=username)
-    #     test = {"username": username}
-    #     return make_response(test, 200)
-
-
-class SessionResource(Resource):
-    def get(self):
-        # Retrieve user_id from session
-        user_id = session.get('username')
-        # app.logger.info('GET Request: Session data - %s', session)
-        # app.logger.info('GET Request: User ID - %s', user_id)
-        return {'user_id': session}, 200
-
     def post(self):
-        # Set user_id in session
-        data = request.get_json()
-        user_id = data.get('user_id')
-        session['user_id'] = user_id
-        # app.logger.info('POST Request: Session data - %s', session)
-        # app.logger.info('POST Request: User ID - %s', user_id)
-        return {'message': 'Session updated'}, 200
+        profile_data = access_profile()
+        username = profile_data["userId"]
+        if 'file' not in request.files:
+            return make_response("No file part", 400)
+        file = request.files['file']
+        if file.filename == '':
+            return make_response("No selected file", 400)
+        # if file.mimetype!='image/jpeg':
+        #     return make_response("Upload file format is not correct", 400)
+        response = file.read()
+        img = cv2.imdecode(np.fromstring(response, np.uint8), cv2.IMREAD_COLOR)
+        ocr_data = cccd_ocr.ocr_process(img, user_id=username)
+        return make_response(ocr_data, 200)
+
 
 class OcrTemplateApi(Resource):
     def post(self):
-        username = str(session.get('username'))
+        profile_data = access_profile()
+        username = profile_data["userId"]
         if 'file' not in request.files:
             return make_response("No file part", 400)
         file = request.files['file']
@@ -173,3 +155,13 @@ def up_keys_to_db():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+class DisplayDBApi(Resource):
+    def post(self):
+        profile_data = access_profile()
+        username = profile_data["userId"]
+        if 'db_name' not in request.form:
+            return make_response("Name parameter missing", 400)
+
+        db_name = request.form['name']
+        filled_data = display_collection(db_name, username)
+        return filled_data

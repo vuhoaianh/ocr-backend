@@ -1,7 +1,8 @@
-from flask import Flask, render_template, redirect, request, make_response, session
+from flask import Flask, render_template, redirect, request, jsonify
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 
 load_dotenv()
@@ -42,19 +43,18 @@ def create_account():
 
 def login():
     if request.method == 'POST':
-        try:
-            username = request.form['username']
-            password = request.form['password']
+        username = request.form['username']
+        password = request.form['password']
 
-            user = collection.find_one({'username': username})
-            if user and check_password_hash(user['password'], password):
-                session['logged_in'] = True
-                session['username'] = username
-                return redirect('/home')
-            else:
-                error_message = "Invalid username or password. Please try again."
-                return render_template("login_page.html", error_message=error_message)
-        except Exception as e:
-            print(e)
-            return redirect('/login')
-    return render_template('login_page.html')
+        user = collection.find_one({'username': username})
+        if user and check_password_hash(user['password'], password):
+            access_token = create_access_token(identity={'id': user['username']})
+            return jsonify(message='Login successful', token=access_token), 200
+        else:
+            return jsonify(message='Invalid username or password'), 401
+
+@jwt_required()
+def profile():
+    user_identity = get_jwt_identity()
+    user_id = user_identity['id']
+    return jsonify(message='This is your profile', userId=user_id), 200

@@ -22,16 +22,11 @@ from vietocr.tool.config import Cfg
 from PIL import Image
 from detr.models import build_model
 from src.settings import *
+from src.utils import encrypt_data
 warnings.filterwarnings("ignore")
 load_dotenv()
 CLIENT = MongoClient(os.getenv('DB_HOST'), int(os.getenv('DB_PORT')))
 
-
-def encrypt_data(data, key):
-    cipher = AES.new(key, AES.MODE_GCM)
-    json_data = json.dumps(data)
-    ciphertext, tag = cipher.encrypt_and_digest(json_data.encode('utf-8'))
-    return ciphertext, cipher.nonce, tag
 
 def VietOCR_model():
     # Load vietOCR model
@@ -98,9 +93,6 @@ class OCR_CCCD:
         config['weights'] = VIETOCR_MODEL
         self.text_recognition_model = Predictor(config)
 
-    # def load_db_collection(self, username):
-    #     cccd_coll = self.db_cccd[username]
-    #     return cccd_coll
     def detect_corners(self, image):
         if isinstance(image, str):
             img_raw = cv2.imread(image, cv2.IMREAD_COLOR)
@@ -215,12 +207,8 @@ class OcrTemplate:
         self.viet_ocr = VietOCR_model()
         self.client = CLIENT
         self.db_key = self.client[os.getenv('DB_KEY')]
-        self.collection_text = None
-        self.collection_keys = self.db_key[os.getenv('COLL_KEY')]
-
-    def load_key_collection(self, username):
-        self.collection_text = self.db_key[username]
-
+        self.db_text = self.db_key[os.getenv('DB_TEXT')]
+        
     @staticmethod
     def save_docx(result, filename="template.docx"):
         txt = ''
@@ -251,7 +239,7 @@ class OcrTemplate:
                 result.append({'text': recognized_text, 'box': [bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]]})
         return result
 
-    def process_template(self, image, template_id):
+    def process_template(self, image, template_id, userId):
         if isinstance(int(template_id), int):
             template_id = int(template_id)
         else:
@@ -307,7 +295,8 @@ class OcrTemplate:
         result_dict = {'doc_temp': template['template_name']}
         for d in result:
             result_dict.update(d)
-        coll = self.collection_text
+        coll_name = "text_" + userId
+        coll = self.db_text[coll_name]
         key = get_random_bytes(16)
         ciphertext, nonce, tag = encrypt_data(result_dict, key)
         document = {
