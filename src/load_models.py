@@ -1,5 +1,6 @@
 import json
 import torch
+import mongo_db_ultils
 from pymongo import MongoClient
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -22,7 +23,7 @@ from vietocr.tool.config import Cfg
 from PIL import Image
 from detr.models import build_model
 from src.settings import *
-from src.utils import encrypt_data
+from src.encrypt import encrypt_data
 warnings.filterwarnings("ignore")
 load_dotenv()
 CLIENT = MongoClient(os.getenv('DB_HOST'), int(os.getenv('DB_PORT')))
@@ -188,17 +189,17 @@ class OCR_CCCD:
         tt2 = out_dict['thuong_tru_2'] if 'thuong_tru_2' in out_dict else ''
         tt_merge = tt1 + ' ' + tt2
         out_dict.update({"Nơi thường trú": tt_merge})
-        coll_name = "cccd_" + str(user_id)
-        coll = self.db_cccd[coll_name]
-        key = get_random_bytes(16)
-        ciphertext, nonce, tag = encrypt_data(out_dict, key)
+        coll = self.db_cccd[user_id]
+        ciphertext, nonce, tag = encrypt_data(out_dict)
         document = {
             'ciphertext': ciphertext,
             'nonce': nonce,
             'tag': tag
         }
-        coll.insert_one(document)
-        return out_dict
+        
+        result = coll.insert_one(document)
+        out_dict.update({"objectID": str(result.inserted_id)})
+        return out_dict        
 
 
 class OcrTemplate:
@@ -207,8 +208,8 @@ class OcrTemplate:
         self.viet_ocr = VietOCR_model()
         self.client = CLIENT
         self.db_key = self.client[os.getenv('DB_KEY')]
-        self.db_text = self.db_key[os.getenv('DB_TEXT')]
-        
+        self.db_text = self.client[os.getenv('DB_TEXT')]
+
     @staticmethod
     def save_docx(result, filename="template.docx"):
         txt = ''
@@ -239,16 +240,10 @@ class OcrTemplate:
                 result.append({'text': recognized_text, 'box': [bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]]})
         return result
 
-    def process_template(self, image, template_id, userId):
-        if isinstance(int(template_id), int):
-            template_id = int(template_id)
-        else:
-            raise "template_id must be an integer"
-        template = [i for i in TEMPLATE if i['id'] == template_id]
-        if not template:
-            raise Exception('No doc_temp found')
-        else:
-            template = template[0]
+    def process_template(self, image, template_id, user_id):
+     
+        template = mongo_db_ultils.get_documents("db_key",user_id, template_id)
+   
         output = self.ocr_image(image)
         # print(output)
         result = []
@@ -292,13 +287,11 @@ class OcrTemplate:
 
         result = [i for i in result if list(i.values())[0] != '']
         result = [i for i in result if i not in [{'Số': 'tiền'}, {'Họ và tên người nhận': 'tiền'}]]
-        result_dict = {'doc_temp': template['template_name']}
+        result_dict = { }
         for d in result:
             result_dict.update(d)
-        coll_name = "text_" + userId
-        coll = self.db_text[coll_name]
-        key = get_random_bytes(16)
-        ciphertext, nonce, tag = encrypt_data(result_dict, key)
+        coll = self.db_text[user_id]
+        ciphertext, nonce, tag = encrypt_data(result_dict)
         document = {
             'ciphertext': ciphertext,
             'nonce': nonce,
@@ -308,8 +301,9 @@ class OcrTemplate:
         self.save_docx(result_dict)
         return result
 
-    def process_native(self, image):
-        template = self.collection_keys.find_one(sort=[('_id', -1)])
+    def process_native(self, image, user_id):
+        collection_keys = self.db_text[user_id]
+        template = collection_keys.find_one(sort=[('_id', -1)])
         if not template:
             raise "Khong tim thay danh sach key"
         output = self.ocr_image(image)
@@ -359,7 +353,7 @@ class OcrTemplate:
             result_dict.update(d)
         coll = self.collection_text
         key = get_random_bytes(16)
-        ciphertext, nonce, tag = encrypt_data(result_dict, key)
+        ciphertext, nonce, tag = encrypt_data(result_dict)
         document = {
             'ciphertext': ciphertext,
             'nonce': nonce,

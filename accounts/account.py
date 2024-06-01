@@ -35,7 +35,7 @@ def create_account():
                 'password': hash_password
             }
             collection.insert_one(user_data)
-            return redirect('/login')
+            return jsonify("Sign in successfuly"), 200
         except Exception as e:
             return redirect('/signup')
     return render_template('register_page.html')
@@ -49,9 +49,12 @@ def login():
         user = collection.find_one({'username': username})
         if user and check_password_hash(user['password'], password):
             access_token = create_access_token(identity={'id': user['username']})
+            with open("token.txt", "w") as file:
+                file.write(access_token)
             return jsonify(message='Login successful', token=access_token), 200
         else:
             return jsonify(message='Invalid username or password'), 401
+
 
 @jwt_required()
 def profile():

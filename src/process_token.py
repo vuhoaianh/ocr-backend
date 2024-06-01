@@ -1,27 +1,11 @@
 import requests
 import os
 
+
 # URL của ứng dụng Flask
 base_url = "http://127.0.0.1:3502"
 token_file = "token.txt"
 
-def login_and_save_token(username, password):
-    login_url = f"{base_url}/login"
-    login_data = {
-        "username": username,
-        "password": password
-    }
-
-    response = requests.post(login_url, json=login_data)
-    if response.status_code == 200:
-        token = response.json().get("token")
-        with open(token_file, "w") as file:
-            file.write(token)
-        print(f"Token saved to {token_file}")
-        return token
-    else:
-        print(f"Failed to login, status code: {response.status_code}")
-        return None
 
 def get_saved_token():
     if os.path.exists(token_file):
@@ -32,8 +16,10 @@ def get_saved_token():
         print(f"Token file {token_file} not found")
         return None
 
+
 def access_profile():
     token = get_saved_token()
+    print(token)
     if token:
         profile_url = f"{base_url}/profile"
         headers = {
@@ -43,17 +29,18 @@ def access_profile():
         if response.status_code == 200:
             profile_data = response.json()
             print(f"Profile data: {profile_data}")
+            return profile_data
         else:
             print(f"Failed to access profile, status code: {response.status_code}")
     else:
         print("No token found")
 
-if __name__ == "__main__":
-    username = "user1"
-    password = "password1"
-    
-    # Uncomment this line to login and save token
-    # login_and_save_token(username, password)
-    
-    # Access profile using saved token
-    access_profile()
+# if __name__ == "__main__":
+#     username = "user1"
+#     password = "password1"
+#
+#     # Uncomment this line to login and save token
+#     # login_and_save_token(username, password)
+#
+#     # Access profile using saved token
+#     access_profile()

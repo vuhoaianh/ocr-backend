@@ -2,6 +2,7 @@ from difflib import SequenceMatcher
 import io
 import os
 from base64 import b64encode
+from pymongo import MongoClient
 from init_models import paddle_ocr, viet_ocr
 import cv2
 import numpy as np
@@ -9,30 +10,25 @@ from PIL import Image, ImageEnhance
 from tqdm import tqdm
 from table_detection import table_detect
 from table_structure_rec import table_structure_recognize
-import json
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 import fitz  # Thư viện pymupdf
+from src.encrypt import encrypt_data
 dirname = os.path.dirname(__file__)
 
 
-def encrypt_data(data):
-    with open('encrypted_key.bin', 'rb') as file:
-        key = file.read()
-    cipher = AES.new(key, AES.MODE_GCM)
-    json_data = json.dumps(data)
-    ciphertext, tag = cipher.encrypt_and_digest(json_data.encode('utf-8'))
-    return ciphertext, cipher.nonce, tag
-
-
-def decrypt_data(ciphertext, nonce, tag, key):
-    with open('encrypted_key.bin', 'rb') as file:
-        key = file.read()
-    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
-    decrypted_data = cipher.decrypt_and_verify(ciphertext, tag)
-    decrypted_json = decrypted_data.decode('utf-8')
-    decrypted_dict = json.loads(decrypted_json)
-    return decrypted_dict
+def up_keys_to_db(user_id, text, name=None):
+    client = MongoClient('localhost', 27017)
+    db = client[os.getenv('DB_KEY')]
+    collection = db[user_id]
+    keys = text.split(',')
+    keys = [i.strip() for i in keys]
+    temp = {'id': '', 'name': name, 'line': keys}  # Thêm trường 'name'
+    ciphertext, nonce, tag = encrypt_data(temp)
+    document = {
+        'ciphertext': ciphertext,
+        'nonce': nonce,
+        'tag': tag
+    }  
+    collection.insert_one(document)
 
 
 def convert_image_to_base64(pil_img):
@@ -259,5 +255,4 @@ def ocr_table(table_metadata):
 
     return table_data
             
-
 
