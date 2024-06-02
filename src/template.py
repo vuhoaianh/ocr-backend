@@ -4,7 +4,7 @@ TEMPLATE = [
         "template_name": "Giấy đề nghị thanh toán",
         "line": ["Đơn vị", "Bộ phận", "Họ và tên người đề nghị thanh toán",
                  "Bộ phận (hoặc địa chỉ)", "Nội dung thanh toán", "Số tiền", "Viết bằng chữ", "Phương thức thanh toán",
-                 "Nguồn kinh phí", "Họ, tên người đề nghị thanh toán"],
+                 "Nguồn kinh phí", "Họ, tên người đề nghị thanh toán", "Mã số đề tài"],
         "block": [],
     },
     {

@@ -5,7 +5,7 @@ import shutil
 from flask import Response, request, jsonify, make_response, session
 from flask_restful import Resource
 from pymongo import MongoClient
-
+import logging
 from src.utils import convert_pdf2images, convert_image_to_base64, ocr_table
 from PIL import Image
 import cv2
@@ -35,24 +35,59 @@ class PreprocessApi(Resource):
 
 class OCRApi(Resource):
     def post(self):
-        if 'file' not in request.files:
-            return make_response("No file part", 400)
-        file = request.files['file']
-        if file.filename == '':
-            return make_response("No selected file", 400)
-        response = file.read()
-        img = cv2.imdecode(np.frombuffer(response, np.uint8), cv2.IMREAD_COLOR)
-        results = seperate_image(img)
-        text_metadata = ocr_text(results['image'], results['texts'])
-        tables_metadata = []
-        if len(results['tables']) != 0:
-            for table in results['tables']:
-                base64_table = convert_image_to_base64(Image.fromarray(table['image']))
-                id = uuid.uuid1()
-                table_data = ocr_table(table)
-                tables_metadata.append({'table_id': id, 'table_coordinate': table['table_coordinate'],
-                                        'table_image': base64_table, 'table_data': table_data})
-        return make_response(jsonify({'metadata': {'text_metadata': text_metadata, 'table_metadata': tables_metadata}}), 200)
+        try:
+            logging.info("Received a request")
+            
+            if 'file' not in request.files:
+                logging.error("No file part in the request")
+                return make_response("No file part", 400)
+
+            file = request.files['file']
+            if file.filename == '':
+                logging.error("No selected file")
+                return make_response("No selected file", 400)
+
+            response = file.read()
+            logging.info("File read successfully")
+
+            img = cv2.imdecode(np.frombuffer(response, np.uint8), cv2.IMREAD_COLOR)
+            if img is None:
+                logging.error("Failed to decode image")
+                return make_response("Failed to decode image", 400)
+            logging.info("Image decoded successfully")
+
+            results = seperate_image(img)
+            logging.info("Image separated successfully")
+
+            text_metadata = ocr_text(results['image'], results['texts'])
+            logging.info("Text recognized successfully")
+            
+            tables_metadata = []
+            if len(results['tables']) != 0:
+                for table in results['tables']:
+                    base64_table = convert_image_to_base64(Image.fromarray(table['image']))
+                    table_id = str(uuid.uuid1())
+                    table_data = ocr_table(table)
+                    tables_metadata.append({
+                        'table_id': table_id, 
+                        'table_coordinate': table['table_coordinate'],
+                        'table_image': base64_table, 
+                        'table_data': table_data
+                    })
+                logging.info("Tables processed successfully")
+
+            response_data = {
+                'metadata': {
+                    'text_metadata': text_metadata, 
+                    'table_metadata': tables_metadata
+                }
+            }
+            logging.info("Response data prepared successfully")
+
+            return make_response(jsonify(response_data), 200)
+        except Exception as e:
+            logging.error(f"An error occurred: {e}", exc_info=True)
+            return make_response("An internal error occurred", 500)
 
 
 class OcrCccdApi(Resource):
@@ -110,14 +145,14 @@ class SaveTableAPI(Resource):
     def post(self):
         if 'file' not in request.files:
             return make_response("No file part", 400)
-        
+
         file = request.files['file']
-        
+
         if 'filename' not in request.form:
             return make_response("Name parameter missing", 400)
-        
+
         filename = request.form['filename']
-        
+
         try:
             response = json.load(file)
             table2excel(response, filename=filename)
@@ -243,3 +278,4 @@ class DeleteDocumentApi(Resource):
         except Exception as e:
             logging.error(f"An error occurred: {str(e)}")
             return make_response(f"An error occurred: {str(e)}", 500)
+

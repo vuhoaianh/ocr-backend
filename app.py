@@ -1,5 +1,6 @@
 from flask import Flask, send_from_directory
 import os
+import logging
 from flask_restful import Api
 from flask_cors import CORS
 from flask_pymongo import PyMongo
@@ -29,6 +30,12 @@ def download_file(name):
 
 
 jwt = JWTManager(app)
+LOGGING_CONFIG = {
+    'level': logging.ERROR,
+    'filename': 'app.log',
+    'filemode': 'w',
+    'format': '%(name)s - %(levelname)s - %(message)s'
+}
 
 CORS(app)
 api = Api(app)

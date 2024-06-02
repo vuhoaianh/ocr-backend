@@ -7,6 +7,7 @@ from Crypto.Random import get_random_bytes
 import os
 import sys
 import docx
+from template_to_docx import tem1_to_docx, tem3_to_docx
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, '..'))
 from paddleocr import PaddleOCR, draw_ocr
@@ -196,10 +197,9 @@ class OCR_CCCD:
             'nonce': nonce,
             'tag': tag
         }
-        
         result = coll.insert_one(document)
-        out_dict.update({"objectID": str(result.inserted_id)})
-        return out_dict        
+        out_dict.update({"objectID": str(result.inserted_id)})        
+        return out_dict
 
 
 class OcrTemplate:
@@ -211,16 +211,22 @@ class OcrTemplate:
         self.db_text = self.client[os.getenv('DB_TEXT')]
 
     @staticmethod
-    def save_docx(result, filename="template.docx"):
-        txt = ''
-        for i in result:
-            if i == "doc_temp":
-                pass
-            else:
-                txt += i + " : " + result[i] + '\n'
-        doc = docx.Document()
-        doc.add_paragraph(txt)
-        doc.save(filename)
+    def save_docx(ocr_result, image_width, image_height, filename="template.txt"):
+        scale = 0.12
+        # doc = docx.Document()
+        page_width = int(image_width * scale)
+        page_height = int(image_height * scale)
+        grid = [[" " for _ in range(page_width + 30)] for _ in range(page_height + 10)]
+        for idx in range(len(ocr_result)):
+            text = ocr_result[idx]['text']
+            points = ocr_result[idx]['box']
+            points = [int(i*scale) for i in points]
+            for i, char in enumerate(text):
+                if points[2] + i < page_width + 50:
+                    grid[points[3]][points[0]+i] = char
+        with open(filename, "w", encoding="utf-8") as file:
+            for row in grid:
+                file.write("".join(row) + "\n")
 
     def ocr_image(self, image):
         if isinstance(image, str):
@@ -230,6 +236,7 @@ class OcrTemplate:
             img_raw = image
         pil_img = Image.fromarray(img_raw)
         image_array = np.array(img_raw)
+        image_width, image_height = pil_img.size
         paddle_rs = self.paddle_ocr.ocr(image_array)
         result = []
         for dets in paddle_rs:
@@ -238,18 +245,23 @@ class OcrTemplate:
                 im_crop = pil_img.crop((bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]))
                 recognized_text = self.viet_ocr.predict(im_crop)
                 result.append({'text': recognized_text, 'box': [bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]]})
-        return result
+        return result, image_width, image_height
 
     def process_template(self, image, template_id, user_id):
-     
-        template = mongo_db_ultils.get_documents("db_key",user_id, template_id)
-   
-        output = self.ocr_image(image)
-        # print(output)
+        isDefaultTemplate = False
+        if template_id in {'1', '2', '3', 1,2,3}:
+            isDefaultTemplate = True
+            template = [i for i in TEMPLATE if i['id'] == int(template_id)]
+            if template: template = template[0]
+        else: template = mongo_db_ultils.get_documents("db_key",user_id, template_id)
+
+        print(isDefaultTemplate)
+
+        output, image_width, image_height = self.ocr_image(image)
+        # self.save_docx(ocr_result=output, image_width=image_width, image_height=image_height, filename="test.txt")
         result = []
         for idx in range(len(output)):
             txt = output[idx]['text']
-            # print(txt)
             points = output[idx]['box']
             if txt in template['line']:
                 if line_check(output[idx + 1]['box'], points):
@@ -298,7 +310,10 @@ class OcrTemplate:
             'tag': tag
         }
         coll.insert_one(document)
-        self.save_docx(result_dict)
+        if(isDefaultTemplate): 
+            if template_id == 1: tem1_to_docx(result_dict)
+            elif template_id == '3': tem3_to_docx(result_dict)
+        
         return result
 
     def process_native(self, image, user_id):
@@ -351,8 +366,7 @@ class OcrTemplate:
         result_dict = {'doc_temp': template['template_name']}
         for d in result:
             result_dict.update(d)
-        coll = self.collection_text
-        key = get_random_bytes(16)
+        coll = self.db_text[user_id]
         ciphertext, nonce, tag = encrypt_data(result_dict)
         document = {
             'ciphertext': ciphertext,
@@ -360,5 +374,11 @@ class OcrTemplate:
             'tag': tag
         }
         coll.insert_one(document)
-        self.save_docx(result)
         return result
+    
+
+if __name__ == '__main__':
+    img = r"D:\Final Code\backend-ocr-pdf\backend-ocr-pdf\giay_xac_nhan.jpg"
+    ocr = OcrTemplate()
+    rs = ocr.process_template(image=img, template_id=3, user_id="6650aeed881922bc00726141")
+    print(rs)
