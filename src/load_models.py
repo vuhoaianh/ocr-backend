@@ -10,7 +10,7 @@ import docx
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from template_to_docx import tem1_to_docx, tem3_to_docx
+from src.template_file_word import tem1_to_docx, tem3_to_docx
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, '..'))
 from paddleocr import PaddleOCR, draw_ocr
@@ -322,6 +322,7 @@ class OcrTemplate:
             'nonce': nonce,
             'tag': tag
         }
+        print(str(result_dict))
         coll.insert_one(document)
         if(isDefaultTemplate): 
             if template_id == '1': tem1_to_docx(result_dict)
