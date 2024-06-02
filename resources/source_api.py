@@ -119,7 +119,7 @@ class OcrTemplateApi(Resource):
         response = file.read()
         template_id = request.form['template_id']
         img = cv2.imdecode(np.frombuffer(response, np.uint8), cv2.IMREAD_COLOR)
-        ocr_data = ocr_template.process_template(img, template_id=template_id, user_id=username)
+        ocr_template.process_template(img, template_id=template_id, user_id=username)
         file_name = 'result_template' + str(datetime.datetime.now().microsecond)
         shutil.copyfile("template.docx", f'static/{file_name}.docx')
         file_url = f'http://localhost:3502/static/{file_name}.docx'  # Assuming the file is accessible via Flask server at this URL
