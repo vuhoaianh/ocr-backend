@@ -7,6 +7,9 @@ from Crypto.Random import get_random_bytes
 import os
 import sys
 import docx
+from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from template_to_docx import tem1_to_docx, tem3_to_docx
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, '..'))
@@ -211,22 +214,32 @@ class OcrTemplate:
         self.db_text = self.client[os.getenv('DB_TEXT')]
 
     @staticmethod
-    def save_docx(ocr_result, image_width, image_height, filename="template.txt"):
+    def save_docx(ocr_result, image_width, image_height, filename="template.docx"):
         scale = 0.12
-        # doc = docx.Document()
         page_width = int(image_width * scale)
         page_height = int(image_height * scale)
         grid = [[" " for _ in range(page_width + 30)] for _ in range(page_height + 10)]
+        
         for idx in range(len(ocr_result)):
             text = ocr_result[idx]['text']
             points = ocr_result[idx]['box']
-            points = [int(i*scale) for i in points]
+            points = [int(i * scale) for i in points]
             for i, char in enumerate(text):
                 if points[2] + i < page_width + 50:
-                    grid[points[3]][points[0]+i] = char
-        with open(filename, "w", encoding="utf-8") as file:
-            for row in grid:
-                file.write("".join(row) + "\n")
+                    grid[points[3]][points[0] + i] = char
+        
+        doc = Document()
+        paragraph = doc.add_paragraph()
+        run = paragraph.add_run()
+        font = run.font
+        font.name = 'Times New Roman'  # Use a monospaced font
+        font.size = Pt(10)
+        
+        for row in grid:
+            run.add_text("".join(row) + "\n")
+        
+        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        doc.save(filename)
 
     def ocr_image(self, image):
         if isinstance(image, str):
@@ -311,9 +324,9 @@ class OcrTemplate:
         }
         coll.insert_one(document)
         if(isDefaultTemplate): 
-            if template_id == 1: tem1_to_docx(result_dict)
+            if template_id == '1': tem1_to_docx(result_dict)
             elif template_id == '3': tem3_to_docx(result_dict)
-        
+        else: self.save_docx(output,image_width, image_height,filename="template.docx")
         return result
 
     def process_native(self, image, user_id):
