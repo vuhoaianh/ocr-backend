@@ -10,7 +10,7 @@ import docx
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from src.template_file_word import tem1_to_docx, tem3_to_docx
+from src.template_file_word import tem1_to_docx, tem3_to_docx, giay_xac_nhan_sinh_vien_to_docx
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, '..'))
 from paddleocr import PaddleOCR, draw_ocr
@@ -262,7 +262,7 @@ class OcrTemplate:
 
     def process_template(self, image, template_id, user_id):
         isDefaultTemplate = False
-        if template_id in {'1', '2', '3', 1,2,3}:
+        if template_id in {'1', '2', '3' , '4', 1,2,3,4}:
             isDefaultTemplate = True
             template = [i for i in TEMPLATE if i['id'] == int(template_id)]
             if template: template = template[0]
@@ -327,6 +327,7 @@ class OcrTemplate:
         if(isDefaultTemplate): 
             if template_id == '1': tem1_to_docx(result_dict)
             elif template_id == '3': tem3_to_docx(result_dict)
+            elif template_id == '4': giay_xac_nhan_sinh_vien_to_docx(result_dict)
         else: self.save_docx(output,image_width, image_height,filename="template.docx")
         return result
 

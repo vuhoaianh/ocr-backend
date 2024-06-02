@@ -53,7 +53,7 @@ def tem1_to_docx(dict_):
 
     variables = {
         "name_position": ho_ten,
-        "Address_position": don_vi,
+        "address_position": don_vi,
         "content_position": noi_dung_thanh_toan,
         "topic_position": ma_so_de_tai,
         "money_position": so_tien,
@@ -204,3 +204,54 @@ def tem3_to_docx(dict_):
 
     # Lưu tài liệu
     doc.save('template.docx')
+
+
+
+
+def giay_xac_nhan_sinh_vien_to_docx(dict_):
+    docx_path = r"doc_temp\giay_xac_nhan_sinh_vien_template.docx"
+    
+    ho_ten_sinh_vien = dict_.get('Họ và tên sinh viên', "")
+    so_dien_thoai = dict_.get('Số điện thoại', "")
+    ngay_sinh = dict_.get('Ngày sinh', "")
+    gioi_tinh = dict_.get('Giới tính', "")
+    so_cccd_cmnd = dict_.get('Số CCD/CMND:', "")  # Sửa lại khóa này
+    ngay_cap = dict_.get('Ngày cầp', "")
+    noi_cap = dict_.get('Nơi cấp', "")
+    ho_khau_thuong_tru = dict_.get('Hộ khẩu thường trú', "")
+    noi_o_hien_nay = dict_.get('Nơi ở hiện nay của gia đình', "")
+    lop = dict_.get('Lớp', "")
+    ma_sinh_vien = dict_.get('Mã sinh viên', "")
+    hoc_ky = dict_.get('Học kỳ', "")
+    nam_hoc = dict_.get('Năm học', "")
+    thoi_gian_khoa_hoc = dict_.get('Thời gian khoá học', "")
+    loai_hinh_dao_tao = dict_.get('Loại hình đào tạo', "")
+    he_dao_tao = dict_.get('Hệ', "")
+    nganh = dict_.get('Ngành', "")
+
+    variables = {
+        "name_position": ho_ten_sinh_vien,
+        "phone_position": so_dien_thoai,
+        "dob_position": ngay_sinh,
+        "gender_position": gioi_tinh,
+        "id_position": so_cccd_cmnd,
+        "date_position": ngay_cap,
+        "place_position": noi_cap,
+        "permanent_address": ho_khau_thuong_tru,
+        "current_address": noi_o_hien_nay,
+        "type_pst": loai_hinh_dao_tao,
+        "edu_system": he_dao_tao,
+        "major_position": nganh,
+        "class_position": lop,
+        "id_number_position": ma_sinh_vien,
+        "semester_position": hoc_ky,
+        "academic_year_position": nam_hoc,
+        "time_position": thoi_gian_khoa_hoc,
+    }
+
+    filled_doc = fill_docx_template(docx_path, variables)
+    # Lưu tệp DOCX đã được điền giá trị
+    filled_doc.save("template.docx")
+
+
+

@@ -15,7 +15,7 @@ from src.utils import seperate_image, ocr_text, up_keys_to_db
 from src.init_models import cccd_ocr, ocr_template
 from src.mongo_db_ultils import display_collection, edit_document, delete_document, get_documents
 from src.table2excel import table2excel
-from src.autofill import autofill
+from src.autofill import getIdentityInfo, auto_fill_student_confirmation
 from src.process_token import access_profile
 
 
@@ -169,17 +169,23 @@ class SaveTableAPI(Resource):
 
 class AutoFillAPI(Resource):
     def post(self):
-        if 'file' not in request.files:
-            return make_response("No file part", 400)
+        profile_data = access_profile()
+        username = profile_data["userId"]
+        if 'template_id' not in request.form:
+            return make_response("No template id", 400)
 
-        file = request.files['file']
-        if 'name' not in request.form:
-            return make_response("Name parameter missing", 400)
-
-        name = request.form['name']
-        response = file.read()
-        filled_data = autofill(response, name)
-        return jsonify(filled_data)
+        template_id = request.form['template_id']
+        if 'document_id' not in request.form:
+            return make_response("No documentID", 400)
+        document_id = request.form['document_id']
+        id_card_data = getIdentityInfo(username, document_id)
+        print(id_card_data)
+        auto_fill_student_confirmation(template_id=template_id, id_card_data=id_card_data)
+        file_name = 'result_template' + str(datetime.datetime.now().microsecond)
+        shutil.copyfile("template.docx", f'static/{file_name}.docx')
+        file_url = f'http://localhost:3502/static/{file_name}.docx'  # Assuming the file is accessible via Flask server at this URL
+        response_data = {'file_url': file_url}
+        return make_response(jsonify(response_data), 200)
 
 
 class UpKeyToDBApi(Resource):

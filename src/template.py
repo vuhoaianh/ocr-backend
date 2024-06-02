@@ -22,5 +22,14 @@ TEMPLATE = [
                  "Lý do chi",
                  "Số tiền", "Bằng chữ", "Kèm theo", "Đã nhận đủ số tiền (viết bằng chữ)"],
         "block": []
+    },
+    {
+        "id": 4,
+        "template_name": "Giấy xác nhận sinh viên",
+        "line": [
+            "Họ và tên sinh viên", "Số điện thoại", "Ngày sinh", "Giới tính", "Số CCCD/CMND", "Ngày cấp",
+            "Nơi cấp", "Hộ khẩu thường trú", "Nơi ở hiện nay của gia đình", "Loại hình đào tạo", "Hệ", "Ngành", "Lớp", "Mã sinh viên","Học kỳ", "Năm học",
+            "Thời gian khóa học"],
+        "block": []
     }
 ]
