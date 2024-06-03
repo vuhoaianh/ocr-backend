@@ -42,14 +42,13 @@ def tem1_to_docx(dict_):
     # Thay thế các biến trong tệp DOCX và thiết lập cỡ chữ
     docx_path = r"doc_temp\giay_xac_nhan_thanh_toan_template.docx"
     
-    
     # Khởi tạo biến variables từ dữ liệu đầu vào
-    ho_ten = dict_['Họ, tên người đề nghị thanh toán: '] if dict_['Họ, tên người đề nghị thanh toán: '] else ""
-    don_vi = dict_['Đơn vị'] if dict_['Đơn vị'] else ""
-    noi_dung_thanh_toan = dict_['Nội dung thanh toán'] if dict_['Nội dung thanh toán'] else ""
-    ma_so_de_tai = dict_['Mã số để tài'] if dict_['Mã số để tài'] else ""
-    so_tien = dict_['Số tiền'] if dict_['Số tiền'] else ""
-    so_tien_bang_chu = dict_['Viết bằng chữ'] if dict_['Viết bằng chữ'] else ""
+    ho_ten = dict_.get('Họ, tên người đề nghị thanh toán: ', "")
+    don_vi = dict_.get('Đơn vị', "")
+    noi_dung_thanh_toan = dict_.get('Nội dung thanh toán', "")
+    ma_so_de_tai = dict_.get('Mã số để tài', "")
+    so_tien = dict_.get('Số tiền', "")
+    so_tien_bang_chu = dict_.get('Viết bằng chữ', "")
 
     variables = {
         "name_position": ho_ten,
@@ -65,6 +64,7 @@ def tem1_to_docx(dict_):
 
     # Lưu tệp DOCX đã được điền giá trị
     filled_doc.save("template.docx")
+
 
 
 

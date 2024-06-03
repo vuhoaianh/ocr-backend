@@ -28,6 +28,7 @@ from PIL import Image
 from detr.models import build_model
 from src.settings import *
 from src.encrypt import encrypt_data
+from tqdm import tqdm
 warnings.filterwarnings("ignore")
 load_dotenv()
 CLIENT = MongoClient(os.getenv('DB_HOST'), int(os.getenv('DB_PORT')))
@@ -252,12 +253,14 @@ class OcrTemplate:
         image_width, image_height = pil_img.size
         paddle_rs = self.paddle_ocr.ocr(image_array)
         result = []
-        for dets in paddle_rs:
+
+        for dets in tqdm(paddle_rs, desc="Processing OCR results"):
             for det in dets:
                 bbox = det[0]
                 im_crop = pil_img.crop((bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]))
                 recognized_text = self.viet_ocr.predict(im_crop)
                 result.append({'text': recognized_text, 'box': [bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]]})
+
         return result, image_width, image_height
 
     def process_template(self, image, template_id, user_id):
@@ -392,8 +395,3 @@ class OcrTemplate:
         return result
     
 
-if __name__ == '__main__':
-    img = r"D:\Final Code\backend-ocr-pdf\backend-ocr-pdf\giay_xac_nhan.jpg"
-    ocr = OcrTemplate()
-    rs = ocr.process_template(image=img, template_id=3, user_id="6650aeed881922bc00726141")
-    print(rs)
