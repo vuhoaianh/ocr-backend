@@ -1,17 +1,18 @@
-import datetime
 import os
 import json
 import shutil
 from flask import Response, request, jsonify, make_response, session
 from flask_restful import Resource
 from pymongo import MongoClient
+from datetime import datetime
+import datetime
 import logging
 from src.utils import convert_pdf2images, convert_image_to_base64, ocr_table
 from PIL import Image
 import cv2
 import numpy as np
 import uuid
-from src.utils import seperate_image, ocr_text, up_keys_to_db
+from src.utils import seperate_image, ocr_text, up_keys_to_db, up_file_to_db
 from src.init_models import cccd_ocr, ocr_template
 from src.mongo_db_ultils import display_collection, edit_document, delete_document, get_documents
 from src.table2excel import table2excel
@@ -123,6 +124,9 @@ class OcrTemplateApi(Resource):
         file_name = 'result_template' + str(datetime.datetime.now().microsecond)
         shutil.copyfile("template.docx", f'static/{file_name}.docx')
         file_url = f'http://localhost:3502/static/{file_name}.docx'  # Assuming the file is accessible via Flask server at this URL
+        create_date = str(datetime.datetime.now())
+        file_type = 'word'
+        up_file_to_db(user_id=username, file_path=file_url, created_date=create_date, file_type=file_type)
         response_data = {'file_url': file_url}
         return make_response(jsonify(response_data), 200)
 
@@ -143,6 +147,8 @@ class OcrCustomConfigApi(Resource):
 
 class SaveTableAPI(Resource):
     def post(self):
+        profile_data = access_profile()
+        username = profile_data["userId"]
         if 'file' not in request.files:
             return make_response("No file part", 400)
 
@@ -159,6 +165,9 @@ class SaveTableAPI(Resource):
             file_name = 'result_table' + str(datetime.datetime.now().microsecond)
             shutil.copyfile(filename, f'static/{file_name}.xlsx')
             file_url = f'http://localhost:3502/static/{file_name}.xlsx'  # Assuming the file is accessible via Flask server at this URL
+            create_date = str(datetime.datetime.now())
+            file_type = 'excel'
+            up_file_to_db(user_id=username, file_path=file_url, created_date=create_date, file_type=file_type)
             response_data = {'file_url': file_url}
             return make_response(response_data, 200)
         except json.JSONDecodeError:
@@ -184,6 +193,9 @@ class AutoFillAPI(Resource):
         file_name = 'result_template' + str(datetime.datetime.now().microsecond)
         shutil.copyfile("template.docx", f'static/{file_name}.docx')
         file_url = f'http://localhost:3502/static/{file_name}.docx'  # Assuming the file is accessible via Flask server at this URL
+        create_date = str(datetime.datetime.now())
+        file_type = 'word'
+        up_file_to_db(user_id=username, file_path=file_url, created_date=create_date, file_type=file_type)
         response_data = {'file_url': file_url}
         return make_response(jsonify(response_data), 200)
 

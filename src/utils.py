@@ -12,6 +12,7 @@ from table_detection import table_detect
 from table_structure_rec import table_structure_recognize
 import fitz  # Thư viện pymupdf
 from src.encrypt import encrypt_data
+from datetime import datetime
 dirname = os.path.dirname(__file__)
 
 
@@ -28,6 +29,31 @@ def up_keys_to_db(user_id, text, name=None):
         'nonce': nonce,
         'tag': tag
     }  
+    collection.insert_one(document)
+
+
+
+def up_file_to_db(user_id, file_path, created_date, file_type):
+    client = MongoClient('localhost', 27017)
+    db_name = os.getenv('DB_DOCUMENT')
+    if not db_name:
+            raise ValueError("Database key is not set in environment variables")
+        
+    db = client[db_name]
+    collection = db[user_id]
+        
+    temp = {
+        'file_path': file_path,
+        'created_date': created_date,
+        'type': file_type
+        }
+        
+    ciphertext, nonce, tag = encrypt_data(temp)
+    document = {
+        'ciphertext': ciphertext,
+        'nonce': nonce,
+        'tag': tag
+        }  
     collection.insert_one(document)
 
 

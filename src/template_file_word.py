@@ -43,7 +43,7 @@ def tem1_to_docx(dict_):
     docx_path = r"doc_temp\giay_xac_nhan_thanh_toan_template.docx"
     
     # Khởi tạo biến variables từ dữ liệu đầu vào
-    ho_ten = dict_.get('Họ, tên người đề nghị thanh toán: ', "")
+    ho_ten = dict_.get('Họ, tên người để nghị thanh toán: ') or dict_.get('Họ, tên người đề nghị thanh toán') or ""
     don_vi = dict_.get('Đơn vị', "")
     noi_dung_thanh_toan = dict_.get('Nội dung thanh toán', "")
     ma_so_de_tai = dict_.get('Mã số để tài', "")

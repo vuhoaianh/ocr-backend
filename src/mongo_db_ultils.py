@@ -8,8 +8,8 @@ client = MongoClient('mongodb://localhost:27017/')
 
 
 def display_collection(db_name, user_id):
-    if db_name not in ('db_text', 'db_key', 'db_cccd'):
-        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd"')
+    if db_name not in ('db_text', 'db_key', 'db_cccd', 'db_document'):
+        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd", "db_document"')
     else:
         db = client[db_name]
         collection = db[user_id]
@@ -26,8 +26,8 @@ def display_collection(db_name, user_id):
 
 
 def get_documents(db_name, user_id, document_id):
-    if db_name not in ('db_text', 'db_key', 'db_cccd'):
-        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd"')
+    if db_name not in ('db_text', 'db_key', 'db_cccd', 'db_document'):
+        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd", "db_document"')
     
     if isinstance(document_id, str):
         try:
@@ -57,8 +57,8 @@ def edit_document(db_name, user_id, updated_data, document_id):
         'nonce': nonce,
         'tag': tag
     }
-    if db_name not in ('db_text', 'db_key', 'db_cccd'):
-        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd"')
+    if db_name not in ('db_text', 'db_key', 'db_cccd', 'db_document'):
+        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd", "db_document"')
     else:
         if isinstance(document_id, str):
             try:
@@ -78,8 +78,8 @@ def edit_document(db_name, user_id, updated_data, document_id):
 
 
 def delete_document(db_name, user_id, document_id):
-    if db_name not in ('db_text', 'db_key', 'db_cccd'):
-        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd"')
+    if db_name not in ('db_text', 'db_key', 'db_cccd', 'db_document'):
+        raise ValueError('db_name must be one of "db_text", "db_key", "db_cccd", "db_document"')
     
     if isinstance(document_id, str):
         try:
